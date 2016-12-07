@@ -99,7 +99,7 @@ describe('the http logger', () => {
 
     sut.responseError(response).catch(actualResponse => {
       expect(actualResponse).toBe(response);
-      expect(loggingError).toHaveBeenCalledWith('No server object daata found');
+      expect(loggingError).toHaveBeenCalledWith('No server object "daata" found');
       done();
     });
   });
