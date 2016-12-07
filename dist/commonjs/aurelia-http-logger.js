@@ -47,7 +47,7 @@ var LoggingInterceptor = exports.LoggingInterceptor = (_dec = (0, _aureliaFramew
           var errorObj = data[config.serverObjectName];
 
           if (!errorObj) {
-            var errMsg = 'No server object ' + config.serverObjectName + ' found';
+            var errMsg = 'No server object "' + config.serverObjectName + '" found';
             _this._logger.error(errMsg);
           } else {
             switch (errorObj.constructor) {

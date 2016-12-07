@@ -50,7 +50,7 @@ define(['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
             var errorObj = data[config.serverObjectName];
 
             if (!errorObj) {
-              var errMsg = 'No server object ' + config.serverObjectName + ' found';
+              var errMsg = 'No server object "' + config.serverObjectName + '" found';
               _this._logger.error(errMsg);
             } else {
               switch (errorObj.constructor) {

@@ -33,7 +33,7 @@ export let LoggingInterceptor = (_dec = inject(LogManager), _dec(_class = class 
           const errorObj = data[config.serverObjectName];
 
           if (!errorObj) {
-            const errMsg = `No server object ${ config.serverObjectName } found`;
+            const errMsg = `No server object "${ config.serverObjectName }" found`;
             this._logger.error(errMsg);
           } else {
             switch (errorObj.constructor) {
