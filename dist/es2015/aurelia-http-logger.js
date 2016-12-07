@@ -1,25 +1,30 @@
 var _dec, _class;
 
-import * as ConfigurationManager from './configuration-manager';
 import { LogManager, inject } from 'aurelia-framework';
+
+const configs = [];
 
 function _parseDictionary(dictionary) {
   const messages = [];
 
   for (let v in dictionary) {
     if (dictionary.hasOwnProperty(v)) {
-      messages.push(`${ v } - ${ dictionary[v] }`);
+      messages.push(`(${ v }) ${ dictionary[v] }`);
     }
   }
 
   return messages;
 }
 
+function _getConfig(statusCode) {
+  return configs.filter(c => c.statusCodes.indexOf(statusCode) !== -1)[0];
+}
+
 export let LoggingInterceptor = (_dec = inject(LogManager), _dec(_class = class LoggingInterceptor {
 
   constructor(logManager) {
     this.responseError = response => {
-      const config = ConfigurationManager.get(response.status);
+      const config = _getConfig(response.status);
       const contentType = response.headers.get('content-type');
       const inspectData = config && config.serverObjectName && contentType && contentType.indexOf('application/json') !== -1;
 
@@ -57,6 +62,27 @@ export let LoggingInterceptor = (_dec = inject(LogManager), _dec(_class = class 
     };
 
     this._logger = logManager.getLogger('http-logging');
+  }
+
+  static intercept(config) {
+    if (!config) return;
+
+    for (let i = 0; i < configs.length; i++) {
+      let codes = config.statusCodes.filter(s => _getConfig(s));
+
+      if (codes.length > 0) {
+        throw new Error(`Status codes: ${ codes.join() } are already configured`);
+      }
+    }
+
+    configs.push(config);
+  }
+
+  static release(config) {
+    let index = configs.indexOf(config);
+    if (index !== -1) {
+      configs.splice(index, 1);
+    }
   }
 
 }) || _class);

@@ -1,29 +1,10 @@
-define(['exports', './configuration-manager', 'aurelia-framework'], function (exports, _configurationManager, _aureliaFramework) {
+define(['exports', 'aurelia-framework'], function (exports, _aureliaFramework) {
   'use strict';
 
   Object.defineProperty(exports, "__esModule", {
     value: true
   });
   exports.LoggingInterceptor = undefined;
-
-  var ConfigurationManager = _interopRequireWildcard(_configurationManager);
-
-  function _interopRequireWildcard(obj) {
-    if (obj && obj.__esModule) {
-      return obj;
-    } else {
-      var newObj = {};
-
-      if (obj != null) {
-        for (var key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
-        }
-      }
-
-      newObj.default = obj;
-      return newObj;
-    }
-  }
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -33,65 +14,100 @@ define(['exports', './configuration-manager', 'aurelia-framework'], function (ex
 
   var _dec, _class;
 
+  var configs = [];
+
   function _parseDictionary(dictionary) {
     var messages = [];
 
     for (var v in dictionary) {
       if (dictionary.hasOwnProperty(v)) {
-        messages.push(v + ' - ' + dictionary[v]);
+        messages.push('(' + v + ') ' + dictionary[v]);
       }
     }
 
     return messages;
   }
 
-  var LoggingInterceptor = exports.LoggingInterceptor = (_dec = (0, _aureliaFramework.inject)(_aureliaFramework.LogManager), _dec(_class = function LoggingInterceptor(logManager) {
-    var _this = this;
+  function _getConfig(statusCode) {
+    return configs.filter(function (c) {
+      return c.statusCodes.indexOf(statusCode) !== -1;
+    })[0];
+  }
 
-    _classCallCheck(this, LoggingInterceptor);
+  var LoggingInterceptor = exports.LoggingInterceptor = (_dec = (0, _aureliaFramework.inject)(_aureliaFramework.LogManager), _dec(_class = function () {
+    function LoggingInterceptor(logManager) {
+      var _this = this;
 
-    this.responseError = function (response) {
-      var config = ConfigurationManager.get(response.status);
-      var contentType = response.headers.get('content-type');
-      var inspectData = config && config.serverObjectName && contentType && contentType.indexOf('application/json') !== -1;
+      _classCallCheck(this, LoggingInterceptor);
 
-      if (inspectData) {
-        return response.json().then(function (data) {
-          var errorObj = data[config.serverObjectName];
+      this.responseError = function (response) {
+        var config = _getConfig(response.status);
+        var contentType = response.headers.get('content-type');
+        var inspectData = config && config.serverObjectName && contentType && contentType.indexOf('application/json') !== -1;
 
-          if (!errorObj) {
-            var errMsg = 'No server object ' + config.serverObjectName + ' found';
-            _this._logger.error(errMsg);
-          } else {
-            switch (errorObj.constructor) {
-              case String:
-                _this._logger.error(config.message + ': ' + errorObj);
-                break;
-              case Array:
-                _this._logger.error(config.message + ': ' + errorObj.map(function (e) {
-                  return e;
-                }).join(', '));
-                break;
-              case Object:
-                var messages = _parseDictionary(errorObj);
-                _this._logger.error(config.message + ': ' + messages.map(function (e) {
-                  return e;
-                }).join(', '));
-                break;
-              default:
-                _this._logger.error('Unknown server object type ' + errorObj.constructor);
+        if (inspectData) {
+          return response.json().then(function (data) {
+            var errorObj = data[config.serverObjectName];
+
+            if (!errorObj) {
+              var errMsg = 'No server object ' + config.serverObjectName + ' found';
+              _this._logger.error(errMsg);
+            } else {
+              switch (errorObj.constructor) {
+                case String:
+                  _this._logger.error(config.message + ': ' + errorObj);
+                  break;
+                case Array:
+                  _this._logger.error(config.message + ': ' + errorObj.map(function (e) {
+                    return e;
+                  }).join(', '));
+                  break;
+                case Object:
+                  var messages = _parseDictionary(errorObj);
+                  _this._logger.error(config.message + ': ' + messages.map(function (e) {
+                    return e;
+                  }).join(', '));
+                  break;
+                default:
+                  _this._logger.error('Unknown server object type ' + errorObj.constructor);
+              }
             }
-          }
 
-          throw response;
+            throw response;
+          });
+        } else if (config) {
+          _this._logger.error(config.message);
+        }
+
+        throw response;
+      };
+
+      this._logger = logManager.getLogger('http-logging');
+    }
+
+    LoggingInterceptor.intercept = function intercept(config) {
+      if (!config) return;
+
+      for (var i = 0; i < configs.length; i++) {
+        var codes = config.statusCodes.filter(function (s) {
+          return _getConfig(s);
         });
-      } else if (config) {
-        _this._logger.error(config.message);
+
+        if (codes.length > 0) {
+          throw new Error('Status codes: ' + codes.join() + ' are already configured');
+        }
       }
 
-      throw response;
+      configs.push(config);
     };
 
-    this._logger = logManager.getLogger('http-logging');
-  }) || _class);
+    LoggingInterceptor.release = function release(config) {
+      var index = configs.indexOf(config);
+      if (index !== -1) {
+        configs.splice(index, 1);
+      }
+    };
+
+    return LoggingInterceptor;
+  }()) || _class);
 });

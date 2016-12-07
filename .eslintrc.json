@@ -1,4 +1,6 @@
 {
   "extends": "./node_modules/aurelia-tools/.eslintrc.json",
-  "indent": [2, 2, {"SwitchCase": 1}]
+  "rules": {
+    "indent": [2, 2, {"SwitchCase": 1}]
+  }
 }
