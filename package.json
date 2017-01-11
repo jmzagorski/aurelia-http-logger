@@ -1,12 +1,13 @@
 {
   "name": "aurelia-http-logger",
   "version": "1.0.0",
-  "description": "common http interception points with logging",
+  "description": "a simple http response logger",
   "keywords": [
     "aurelia",
     "plugin",
     "interceptor",
     "logging",
+    "logger",
     "http"
   ],
   "license": "CC0-1.0",
@@ -14,7 +15,7 @@
   "main": "dist/commonjs/aurelia-http-logger.js",
   "repository": {
     "type": "git",
-    "url": "http://github.com/jmzagorski/aurelia-plugins/aurelia-http-logger"
+    "url": "http://github.com/jmzagorski/aurelia-http-logger"
   },
   "devDependencies": {
     "aurelia-tools": "^1.0.0",
