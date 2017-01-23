@@ -15,10 +15,9 @@ A very simple http logging package that intercepts status codes setup on the sta
  HttpClient
 ```
 import {HttpClient} from "aurelia-fetch-client";
-import {inject} from "aurelia-framework";
-import {LoggingInterceptor} from "aurelia-http-logger";
+import * as LoggingInterceptor from "aurelia-http-logger";
 
-// global configuration
+// configuration
 LoggingInterceptor.intercept({
   statusCodes: [400],
   message: "Bad Request",
@@ -33,14 +32,10 @@ LoggingInterceptor.intercept({
   message: "You found a bug! Please contact support so we can fix it."
 });
 
-// add the logging class to the interceptors
-// and that's it
-@inject(HttpClient, LoggingInterceptor)
 export default class {
 
-  constructor(http, loggingInterceptor) {
+  constructor(http) {
     this._http = http;
-    this._loggingInterceptor = loggingInterceptor;
   }
 
   configure() {
@@ -53,7 +48,7 @@ export default class {
         })
         .useStandardConfiguration()
         .withBaseUrl("./api/")
-        .withInterceptor(this._loggingInterceptor);
+        .withInterceptor(LoggingInterceptor);
     });
   }
 }
