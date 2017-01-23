@@ -59,7 +59,7 @@
       "dist": "dist/amd"
     },
     "dependencies": {
-      "aurelia-framework": "^1.0.7"
+      "aurelia-logging": "^1.2.0"
     },
     "devDependencies": {
       "aurelia-polyfills": "^1.1.1",

@@ -1,4 +1,5 @@
-import {LoggingInterceptor} from '../src/aurelia-http-logger';
+import * as TheLogManager from 'aurelia-logging';
+import * as HttpLogger from '../src/aurelia-http-logger';
 import using from 'jasmine-data-provider';
 
 class HttpResponseStub {
@@ -23,15 +24,18 @@ class LoggerStub {
   error(msg) { }
 }
 
-class LogManagerStub {
-  getLogger(str) { }
-}
-
 describe('the http logger', () => {
   let config;
   let response;
-  let sut;
   let loggingError;
+
+  // this is here because the logger is only created once on the first
+  // interception call
+  beforeAll(() =>  {
+    let logger = new LoggerStub();
+    loggingError = spyOn(logger, 'error');
+    spyOn(TheLogManager, 'getLogger').and.returnValue(logger);
+  });
 
   beforeEach(() => {
     config = {
@@ -40,23 +44,16 @@ describe('the http logger', () => {
       serverObjectName: null
     };
 
-    let logManager = new LogManagerStub();
-    let logger = new LoggerStub();
-    loggingError = spyOn(logger, 'error');
-    spyOn(logManager, 'getLogger').and.returnValue(logger);
-
     response = new HttpResponseStub();
     response.status = 400;
 
-    LoggingInterceptor.intercept(config);
-
-    sut = new LoggingInterceptor(logManager);
+    HttpLogger.intercept(config);
   });
 
-  afterEach(() => LoggingInterceptor.release(config));
+  afterEach(() => HttpLogger.release(config));
 
   it('does not throw when the configuration is missing', () => {
-    expect(() => LoggingInterceptor.release()).not.toThrow();
+    expect(() => HttpLogger.release()).not.toThrow();
   });
 
   it('prevents duplicate status code configurations', () => {
@@ -66,28 +63,28 @@ describe('the http logger', () => {
       serverObjectName: null
     };
 
-    expect(() => LoggingInterceptor.intercept(dupeConfig))
+    expect(() => HttpLogger.intercept(dupeConfig))
       .toThrow(new Error('Status codes: 400 are already configured'));
   });
 
   it('does nothing with no config object', () => {
-    LoggingInterceptor.release(config);
+    HttpLogger.release(config);
 
-    expect(() => sut.responseError(response)).toThrow(response);
+    expect(() => HttpLogger.responseError(response)).toThrow(response);
     expect(loggingError).not.toHaveBeenCalled();
   });
 
   it('only logs config message when content type is not json', () => {
     response.contentType = '';
 
-    expect(() => sut.responseError(response)).toThrow(response);
+    expect(() => HttpLogger.responseError(response)).toThrow(response);
     expect(loggingError).toHaveBeenCalledWith(config.message);
   });
 
   it('does not inspect the response data without a serverObjectName', () => {
     config.serverObjectName = null;
 
-    expect(() => sut.responseError(response)).toThrow(response);
+    expect(() => HttpLogger.responseError(response)).toThrow(response);
     expect(loggingError).toHaveBeenCalledWith(config.message);
   });
 
@@ -97,7 +94,7 @@ describe('the http logger', () => {
     };
     config.serverObjectName = 'daata';
 
-    sut.responseError(response).catch(actualResponse => {
+    HttpLogger.responseError(response).catch(actualResponse => {
       expect(actualResponse).toBe(response);
       expect(loggingError).toHaveBeenCalledWith('No server object "daata" found');
       done();
@@ -111,7 +108,7 @@ describe('the http logger', () => {
     };
     config.serverObjectName = 'data';
 
-    sut.responseError(response).catch(actualResponse => {
+    HttpLogger.responseError(response).catch(actualResponse => {
       expect(actualResponse).toBe(response);
       expect(loggingError).toHaveBeenCalledWith(expectedCall);
       done();
@@ -127,11 +124,27 @@ describe('the http logger', () => {
       response.itemStub = { data: data.data };
       config.serverObjectName = 'data';
 
-      sut.responseError(response).catch(actualResponse => {
+      HttpLogger.responseError(response).catch(actualResponse => {
         expect(actualResponse).toBe(response);
         expect(loggingError).toHaveBeenCalledWith('test: ' + data.expectMsg);
         done();
       });
     });
+  });
+
+  it('logs response message if exists without headers', () => {
+    response.headers = null;
+    response.message = 'testing';
+    response.status = null;
+
+    expect(() => HttpLogger.responseError(response)).toThrow(response);
+    expect(loggingError).toHaveBeenCalledWith('testing');
+  });
+
+  it('logs the config message before the response msg', () => {
+    response.message = config.message + 'testing';
+
+    expect(() => HttpLogger.responseError(response)).toThrow(response);
+    expect(loggingError).toHaveBeenCalledWith(config.message);
   });
 });
